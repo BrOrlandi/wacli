@@ -80,8 +80,10 @@ func (c *Client) init() (err error) {
 		}
 	})
 	// Let whatsmeow own bounded primary-device retries and cancellation for
-	// eligible decryption failures.
-	c.client.AutomaticMessageRerequestFromPhone = true
+	// eligible decryption failures, unless WACLI_REREQUEST_FROM_PHONE turns it
+	// off: on some phones (iPhone) every answer to such a request shows a
+	// "sync completed" notification.
+	c.client.AutomaticMessageRerequestFromPhone = RerequestFromPhone()
 	c.container = container
 	return nil
 }

@@ -184,6 +184,15 @@ func (a *App) addSyncEventHandler(ctx context.Context, opts SyncOptions, message
 					"unavailable_type": string(v.UnavailableType),
 					"fail_mode":        string(v.DecryptFailMode),
 					"recovery":         recovery,
+					// What the envelope says without decrypting it: which kind of
+					// message could not be read, and when it was sent.
+					"type":       v.Info.Type,
+					"media_type": v.Info.MediaType,
+					"category":   v.Info.Category,
+					"edit":       string(v.Info.Edit),
+					"is_group":   v.Info.IsGroup,
+					"from_me":    v.Info.IsFromMe,
+					"timestamp":  v.Info.Timestamp.UTC().Format(time.RFC3339),
 				})
 		case *events.OfflineSyncPreview:
 			// Emitted right after connecting when the server is about to send
@@ -959,6 +968,11 @@ func (a *App) decryptEncryptedReaction(ctx context.Context, pm *wa.ParsedMessage
 // messages can prompt a primary-device request, without guaranteeing recovery.
 func undecryptableWarning(v *events.UndecryptableMessage) (recovery, warning string) {
 	what := fmt.Sprintf("message %s in %s from %s", v.Info.ID, v.Info.Chat, v.Info.Sender)
+	if !wa.RerequestFromPhone() {
+		return "not_requested", fmt.Sprintf(
+			"warning: could not read %s (fail mode %s); asking the phone for a copy is off (WACLI_REREQUEST_FROM_PHONE), so the message stays missing here",
+			what, undecryptableFailMode(v.DecryptFailMode))
+	}
 	if v.UnavailableType != events.UnavailableTypeUnknown {
 		return "requested_if_possible", fmt.Sprintf(
 			"warning: %s was reported unavailable (%s); recovery depends on WhatsApp and a readable copy may not arrive",
